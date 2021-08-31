@@ -1,0 +1,22 @@
+﻿Page,Section,Text
+Maps,Title,Tracking Racial/Ethnic Disparities in COVID-19 Vaccination
+Time series,Title,Tracking Racial/Ethnic Disparities in COVID-19 Vaccination
+About,Title,Tracking Racial/Ethnic Disparities in COVID-19 Vaccination
+Maps,Below tabs,"Maps show variation in coverage of at least one dose ages 12 years and older across states and by race/ethnicity.
+
+Explore the map by selecting a metric. Hover over a state for more information."
+Maps,Metric 1,Projected date to reach 80% coverage
+Maps,Metric 2,Current coverage
+Maps,Legend 1,Time to reach 80% coverage of 1+ doses among ages 12+
+Maps,Legend 2,Current coverage of 1+ doses among ages 12+
+Time series,Below tabs,"Coverage trends for at least one dose among ages 12 years and older.
+
+Choose a view to compare racial/ethnic groups within a state or to compare states for a particular racial/ethnic group."
+Time series,View 1,All states by race/ethnicity
+Time series,View 2,All racial/ethnic groups by state
+About,Below tabs,The research team are members of Stanford University’s Department of Health Policy [https://healthpolicy.fsi.stanford.edu/]. We are part of the Prevention Policy Modeling Lab (PPML) [https://ppml.stanford.edu/] and the Stanford-CIDE Coronavirus Simulation Modeling (SC-COSMO) Consortium [https://www.sc-cosmo.org/]. You can get in touch with us at vax.equity.tracker@gmail.com. 
+About,Below tabs 2,Our work is funded in part by…
+About,Below tabs 3,"We are grateful for the tireless work of analysts at the Kaiser Family Foundation, who routinely extract and compile data from state dashboards to provide breakdowns of vaccinations by race/ethnicity."
+About,Below tabs 4,Methods
+About,Below tabs 5,"We use historical state-reported vaccination data by race/ethnicity to project vaccine coverage, by state and nationally, among people ages 12 and older for four mutually exclusive racial/ethnic groups (White, Black, Hispanic, and Asian). Specifically, we used data on distribution of vaccines administered by race/ethnicity extracted from state reporting dashboards by the Kaiser Family Foundation, the percentage of people ages 12 and older who have received at least one dose from the Centers for Disease Control and Prevention, and population data from the 2019 American Community Survey to estimate the share of people ages 12 years and older receiving one or more COVID-19 vaccination doses, by state and race/ethnicity. We project coverage rates through December 31, 2021 based on the average vaccination rate between July 19 and August 16 for each racial/ethnic group, by state. "
+About,Below tabs 6,"Additional details on methods, analytic code, input data, and coverage estimates in table format are available at: https://github.com/SC-COSMO/vax_disparities_dashboard."
