@@ -14,12 +14,7 @@ Time series,Below tabs,Text,"Coverage trends for at least one dose among ages 12
 Choose a view to compare racial/ethnic groups within a state or to compare states for a particular racial/ethnic group."
 Time series,View 1,Text,All states by race/ethnicity
 Time series,View 2,Text,All racial/ethnic groups by state
-About,Below tabs 1,Text,"The research team are members of [Stanford University’s Department of 
-Health Policy](https://healthpolicy.fsi.stanford.edu/). We are part of 
-the [Prevention Policy Modeling Lab (PPML)](https://ppml.stanford.edu/) 
-and the [Stanford-CIDE Coronavirus Simulation Modeling (SC-COSMO) 
-Consortium](https://www.sc-cosmo.org/). You can get in touch with us at 
-<vax.equity.tracker@gmail.com>."
+About,Below tabs 1,Text,The research team are members of [Stanford University’s Department of Health Policy](https://healthpolicy.fsi.stanford.edu/). We are part of the [Prevention Policy Modeling Lab (PPML)](https://ppml.stanford.edu/) and the [Stanford-CIDE Coronavirus Simulation Modeling (SC-COSMO) Consortium](https://www.sc-cosmo.org/). You can get in touch with us at <vax.equity.tracker@gmail.com>.
 About,Below tabs 2,Text,Our work is funded in part by…
 About,Below tabs 3,Text,"We are grateful for the tireless work of analysts at the Kaiser Family Foundation, who routinely extract and compile data from state dashboards to provide breakdowns of vaccinations by race/ethnicity."
 About,Below tabs 4,Header,Methods
