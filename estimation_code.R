@@ -238,7 +238,7 @@ vax_stats <- vax_stats[is.na(exceeded), race_doses:=race_doses+(second_pct*add_d
 
 vax_stats <- vax_stats[, vaccinated_pct_12:=(race_doses/pop_12)*100]
 
-pdf("./figures/historical_coverage_8.11.21.pdf", width = 8, height = 6)
+pdf("./figures/historical_coverage_8.16.21.pdf", width = 8, height = 6)
 for (i in unique(kff_full$state_name)) {
   plot <- ggplot(data = vax_stats[state_name==i & race_grp%in%c("Hispanic", "White", "Black", "Asian") & missing!=1], aes(x = Date, y = vaccinated_pct_12, color = race_grp)) + 
     geom_line(data = vax_stats[state_name==i & race_grp=="White"], aes(y = (doses_adj/pop_12_allrace)*100), size = 1.2, color = "dark gray") +
@@ -260,11 +260,6 @@ vax_stats <- copy(backup)
 ## SMOOTH DISCONTINUITIES ##
 
 ## STEP 1: Fill
-# vax_dates_square <- as.data.table(expand.grid(Date = seq(ymd("2021-03-01"), ymd(max(vax_stats$Date)), by = "day"), race_grp = unique(vax_stats$race_grp), state_name = unique(vax_stats$state_name)))
-# vax_stats <- merge(vax_stats, vax_dates_square, by = c("Date", "race_grp", "state_name"), all = T)
-# vax_stats <- vax_stats[order(state_name, race_grp, Date)]
-# vax_stats <- vax_stats[, race_doses_approx:=na.approx(race_doses), by = c("state_name", "race_grp")]
-
 vax_stats <- vax_stats[missing!=1, race_doses_approx:=race_doses]
 
 for (i in as.list(seq.Date(as.Date(min(vax_stats$Date)), as.Date(max(vax_stats$Date)) , "days"))) {
@@ -326,7 +321,7 @@ out <- out[is.na(race_doses_approx) & !is.na(value), race_doses_approx:=race_dos
 
 out <- out[, vaccinated_pct_12:=(race_doses_approx/pop_12)*100]
 
-pdf("./figures/historical_coverage_8.11.21_adj.pdf", width = 8, height = 6)
+pdf("./figures/historical_coverage_8.16.21_adj.pdf", width = 8, height = 6)
 for (i in unique(kff_full$state_name)) {
   plot <- ggplot(data = out[state_name==i & race_grp%in%c("Hispanic", "White", "Black", "Asian") & missing!=1], aes(x = Date, y = vaccinated_pct_12, color = race_grp)) + 
     geom_line(data = out[state_name==i & race_grp=="White"], aes(y = (doses_adj/pop_12_allrace)*100), size = 1.2, color = "dark gray") +
@@ -383,8 +378,11 @@ vax_stats <- vax_stats[vaccinated_pct_12>100 | is.na(vaccinated_pct_12), vaccina
 vax_stats <- vax_stats[, tot_doses:=sum(race_doses_approx, na.rm=T), by = c("state_name", "Date")]
 vax_stats <- vax_stats[, agg:=(tot_doses/pop_12_allrace)*100]
 
+write.csv(vax_stats, "~/Downloads/vax_stats.csv", na = "", row.names = F)
+
 vax_stats_out <- copy(vax_stats)
 vax_stats_out <- vax_stats_out[race_grp%in%c("Asian", "Black", "Hispanic", "White")]
+
 temp <- copy(vax_stats_out)
 temp <- temp[, vaccinated_pct_12:=agg]
 temp <- temp[, pop_12:=pop_12_allrace]
@@ -393,6 +391,7 @@ temp <- unique(temp[,.(state_name, Date, race_grp, vaccinated_pct_12, pop_12, pr
 
 vax_stats_out <- vax_stats_out[,.(state_name, Date, race_grp, vaccinated_pct_12, pop_12, project, missing)]
 vax_stats_out <- rbind(vax_stats_out, temp, fill = T)
+
 vax_stats_out <- vax_stats_out[, vaccinated_pct_12_out:=as.character(round(vaccinated_pct_12, digits = 2))]
 vax_stats_out <- vax_stats_out[missing == 1, vaccinated_pct_12_out:="NR"]
 vax_stats_out <- vax_stats_out[, missing:=NULL]
@@ -400,81 +399,84 @@ vax_stats_out <- vax_stats_out[, vaccinated_pct_12:=NULL]
 
 vax_stats_out <- merge(vax_stats_out, fips, by = "state_name")
 
-# write.csv(vax_stats_out, "~/Downloads/coverage_time_series.csv", na = "", row.names = F)
+vax_stats_nat <- copy(vax_stats)
+vax_stats_nat <- vax_stats_nat[, nat_doses_race:=sum(race_doses_approx, na.rm=T), by = c("race_grp", "Date")]
+vax_stats_nat <- vax_stats_nat[, nat_pop_race:=sum(pop_12, na.rm=T), by = c("race_grp", "Date")]
+vax_stats_nat <- vax_stats_nat[, nat_doses_agg:=sum(race_doses_approx, na.rm=T), by = c("Date")]
+vax_stats_nat <- vax_stats_nat[, nat_pop_agg:=sum(pop_12, na.rm=T), by = c("Date")]
 
-vax_stats_out <- vax_stats_out[Date=="2021-07-04"]
-vax_stats_out <- vax_stats_out[vaccinated_pct_12_out>=70, mapvar:="On Track to Reach 70%"]
-vax_stats_out <- vax_stats_out[vaccinated_pct_12_out<70, mapvar:="Not On Track to Reach 70%"]
-vax_stats_out <- vax_stats_out[vaccinated_pct_12_out=="NR", mapvar:="Data Not Reported"]
+vax_stats_nat <- vax_stats_nat[, nat_race:=(nat_doses_race/nat_pop_race)*100]
+vax_stats_nat <- vax_stats_nat[, nat_race_agg:=(nat_doses_agg/nat_pop_agg)*100]
 
-# write.csv(vax_stats_out[,.(state_name, race_grp, state, state_code, mapvar)], "~/Downloads/map_data.csv", na = "", row.names = F)
+vax_stats_nat <- unique(vax_stats_nat[,.(Date, race_grp, nat_race_agg, nat_race, nat_pop_agg, nat_pop_race, project)])
 
-vax_stats_out <- copy(vax_stats)
-vax_stats_out <- vax_stats_out[Date=="2021-07-04"]
-vax_stats_out <- vax_stats_out[, upper:=vaccinated_pct_12+1.96*sqrt((vaccinated_pct_12*(100-vaccinated_pct_12))/pop_12)]
-vax_stats_out <- vax_stats_out[, moe:=upper-vaccinated_pct_12]
-vax_stats_out <- vax_stats_out[, vaccinated_pct_12_out:=as.character(round(vaccinated_pct_12))]
-vax_stats_out <- vax_stats_out[, All:=as.character(round(agg))]
-vax_stats_out <- vax_stats_out[missing == 1, vaccinated_pct_12_out:="NR"]
+setnames(vax_stats_nat, c("nat_race", "nat_race_agg", "nat_pop_race", "nat_pop_agg"),
+         c("vaccinated_pct_12", "agg", "pop_12", "pop_12_allrace"))
 
-suppress_table <- copy(vax_stats_out)
+temp <- copy(vax_stats_nat)
+temp <- temp[, vaccinated_pct_12:=agg]
+temp <- temp[, pop_12:=pop_12_allrace]
+temp <- temp[, race_grp:="All"]
+temp <- unique(temp[,.(Date, race_grp, vaccinated_pct_12, pop_12, project)])
+
+vax_stats_nat <- rbind(vax_stats_nat, temp, fill = T)
+vax_stats_nat <- vax_stats_nat[race_grp%in%c("Asian", "Black", "Hispanic", "White", "All")]
+vax_stats_nat <- vax_stats_nat[, state_name:="United States"]
+vax_stats_nat <- vax_stats_nat[, state_code:="00"]
+vax_stats_nat <- vax_stats_nat[, state:="US"]
+
+vax_stats_nat <- vax_stats_nat[,.(state_name, Date, race_grp, pop_12, project, vaccinated_pct_12, state, state_code)]
+vax_stats_nat <- vax_stats_nat[, vaccinated_pct_12_out:=as.character(round(vaccinated_pct_12, digits = 2))]
+vax_stats_nat <- vax_stats_nat[, vaccinated_pct_12:=NULL]
+
+vax_stats_out <- rbind(vax_stats_out, vax_stats_nat)
+
+write.csv(vax_stats_out, "./output/coverage_time_series.csv", na = "", row.names = F)
+
+suppress_table <- copy(vax_stats)
+suppress_table <- suppress_table[Date=="2021-08-16"]
 suppress_table <- suppress_table[, nr:=ifelse(missing == 1, 1, 0)]
 suppress_table <- unique(suppress_table[,.(state_name, race_grp, nr)])
-suppress_table <- suppress_table[race_grp%in%c("Asian", "Black", "Hispanic", "White", "American Indian or Alaska Native", "Other", "Native Hawaiian or Other Pacific Islander")]
-
-vax_stats_out <- vax_stats_out[vaccinated_pct_12>=70 & missing!=1, vaccinated_pct_12_out:="> 70%"]
-vax_stats_out <- vax_stats_out[agg>=70, All:="> 70%"]
-
-
-vax_stats_out <- vax_stats_out[,.(state_name, race_grp, All, vaccinated_pct_12_out)]
-vax_stats_out <- vax_stats_out[race_grp%in%c("Asian", "Black", "Hispanic", "White")]
-vax_stats_out <- dcast(vax_stats_out, state_name + All ~ race_grp, value.var = "vaccinated_pct_12_out")
-
-# write.csv(vax_stats_out, "./output/coverage_july_4.csv", na = "", row.names = F)
+suppress_table <- suppress_table[race_grp%in%c("Asian", "Black", "Hispanic", "White")]
 
 vax_date_out <- copy(vax_stats)
 vax_date_out <- vax_date_out[,.(state_name, Date, race_grp, vaccinated_pct_12)]
 vax_date_out <- vax_date_out[race_grp%in%c("Asian", "Black", "Hispanic", "White")]
-vax_dates_square <- as.data.table(expand.grid(Date = seq(ymd("2021-03-15"), ymd("2021-09-01"), by = "day"), race_grp = c("Asian", "Black", "Hispanic", "White"), state_name = unique(vax_date_out$state_name)))
+vax_dates_square <- as.data.table(expand.grid(Date = seq(ymd("2021-03-01"), ymd("2021-12-31"), by = "day"), race_grp = c("Asian", "Black", "Hispanic", "White"), state_name = unique(vax_date_out$state_name)))
 vax_date_out <- merge(vax_date_out, vax_dates_square, by = c("Date", "race_grp", "state_name"), all = T)
 vax_date_out <- vax_date_out[order(state_name, race_grp, Date)]
 vax_date_out <- vax_date_out[, vaccinated_pct_12_approx:=na.approx(vaccinated_pct_12), by = c("state_name", "race_grp")]
 
-vax_date_out <- vax_date_out[vaccinated_pct_12_approx>=70, date_:=min(Date, na.rm=T), by = c("state_name", "race_grp")]
+vax_date_out <- vax_date_out[vaccinated_pct_12_approx>=80, date_:=min(Date, na.rm=T), by = c("state_name", "race_grp")]
 vax_date_out <- vax_date_out[, date_:=mean(date_, na.rm=T), by = c("state_name", "race_grp")]
-
-diff_df <- copy(vax_date_out)
-diff_df <- diff_df[is.na(date_), date_:=ymd("2021-09-01")]
-diff_df <- unique(diff_df[,.(date_, state_name, race_grp)])
-diff_df <- merge(diff_df, suppress_table, by=c("state_name", "race_grp"))
-diff_df <- diff_df[nr==1, date_:=NA]
-diff_df <- dcast(diff_df, state_name ~ race_grp, value.var = "date_")
-diff_df <- diff_df[White<="2021-07-04", diff_black:=White-Black]
-
-vax_date_out <- vax_date_out[, date_:=as.character(date_)]
-vax_date_out <- vax_date_out[is.na(date_), date_:="After September 1"]
-
 vax_date_out <- unique(vax_date_out[,.(state_name, race_grp, date_)])
-vax_date_out <- vax_date_out[race_grp%in%c("Asian", "Black", "Hispanic", "White")]
-vax_date_out <- merge(vax_date_out, suppress_table, by = c("state_name", "race_grp"))
-vax_date_out <- vax_date_out[nr==1, date_:="NR"]
-vax_date_out <- vax_date_out[, c("nr"):=NULL]
-vax_date_out <- dcast(vax_date_out, state_name ~ race_grp, value.var = "date_")
-vax_date_out <- vax_date_out[,.(state_name, White, Black, Hispanic, Asian)]
+vax_date_out <- vax_date_out[is.na(date_), date_:=ymd("2022-01-01")]
+vax_date_out <- vax_date_out[, date_70:=month(date_, label = T)]
+vax_date_out <- vax_date_out[date_<"2021-09-01", date_70:="Reached 80%"]
+vax_date_out <- vax_date_out[date_70 == "Sep", date_70:="Sep. 2021"]
+vax_date_out <- vax_date_out[date_70 == "Oct", date_70:="Oct. 2021"]
+vax_date_out <- vax_date_out[date_70 == "Nov", date_70:="Nov. 2021"]
+vax_date_out <- vax_date_out[date_70 == "Dec", date_70:="Dec. 2021"]
+vax_date_out <- vax_date_out[date_70 == "Jan", date_70:="Jan. 2022 or later"]
+vax_date_out <- merge(vax_date_out, suppress_table, by = c("state_name", "race_grp"), all = T)
+vax_date_out <- vax_date_out[nr==1, date_70:="NR"]
+vax_date_out <- vax_date_out[, nr:=NULL]
+vax_date_out <- vax_date_out[, date_:=NULL]
 
-write.csv(vax_date_out, "./output/date_70_state.csv", na = "", row.names = F)
+vax_date_out <- merge(vax_date_out, fips, by = "state_name")
+setnames(vax_date_out, "date_70", "date_80")
 
-# vax_stats <- merge(vax_stats, suppress_table, by = c("state_name", "race_grp"))
+write.csv(vax_date_out, "./output/map_date_80.csv", na = "", row.names = F)
 
-pdf("./figures/projections_state_8.11.21.pdf", width = 8, height = 6)
+pdf("./figures/projections_state_8.16.21.pdf", width = 8, height = 6)
 for (i in unique(kff_full$state_name)) {
   plot <- ggplot(data = vax_stats[state_name==i & race_grp%in%c("Hispanic", "White", "Black", "Asian") & is.na(project) & missing==0],
                  aes(x = Date, y = vaccinated_pct_12, color = race_grp)) + 
     geom_line(data = vax_stats[state_name==i & race_grp=="White" & is.na(project)], aes(y = agg), size = 1, color = "dark gray") +
     geom_point(size = 2) + geom_line( size = 1.1) +
-    geom_line(data = vax_stats[state_name==i & race_grp=="White" & (project == 1 | Date == "2021-08-02")], aes(y = agg), size = 1.2, color = "dark gray",
+    geom_line(data = vax_stats[state_name==i & race_grp=="White" & (project == 1 | Date == "2021-08-16")], aes(y = agg), size = 1.2, color = "dark gray",
               linetype = "dashed", alpha = 0.9) +
-    geom_line(data = vax_stats[state_name==i & race_grp%in%c("Hispanic", "White", "Black", "Asian") & (project == 1 | Date == "2021-08-02") & missing==0],
+    geom_line(data = vax_stats[state_name==i & race_grp%in%c("Hispanic", "White", "Black", "Asian") & (project == 1 | Date == "2021-08-16") & missing==0],
               size = 1.3,
               linetype = "dashed", alpha = 0.9) +
     theme_bw() +
@@ -489,476 +491,3 @@ for (i in unique(kff_full$state_name)) {
   print(plot)
 }
 dev.off()
-
-vax_stats_nat <- copy(vax_stats)
-vax_stats_nat <- vax_stats_nat[, nat_doses_race:=sum(race_doses, na.rm=T), by = c("race_grp", "Date")]
-vax_stats_nat <- vax_stats_nat[, nat_pop_race:=sum(pop_12, na.rm=T), by = c("race_grp", "Date")]
-vax_stats_nat <- vax_stats_nat[, nat_doses_agg:=sum(race_doses, na.rm=T), by = c("Date")]
-vax_stats_nat <- vax_stats_nat[, nat_pop_agg:=sum(pop_12, na.rm=T), by = c("Date")]
-
-vax_stats_nat <- vax_stats_nat[, nat_race:=(nat_doses_race/nat_pop_race)*100]
-vax_stats_nat <- vax_stats_nat[, nat_race_agg:=(nat_doses_agg/nat_pop_agg)*100]
-
-vax_stats_nat <- unique(vax_stats_nat[,.(race_grp, Date, nat_race, nat_race_agg, project, nat_pop_race, nat_pop_agg)])
-vax_stats_nat <- vax_stats_nat[(Date>"2021-06-07" & project==1) | is.na(project)]
-
-write.csv(vax_stats_nat[Date=="2021-07-04"], "./output/national_current.csv", na = "", row.names = F)
-write.csv(vax_stats_nat[Date<="2021-07-04"], "./output/national_time_series.csv", na = "", row.names = F)
-
-vax_stats_out_nat <- copy(vax_stats_nat)
-vax_stats_out_nat_race <- vax_stats_out_nat[,.(race_grp, Date, nat_race, project, nat_pop_race)]
-setnames(vax_stats_out_nat_race, c("nat_race", "nat_pop_race"), c("vaccinated_pct_12_out", "pop_12"))
-vax_stats_out_nat_all <- vax_stats_out_nat[,.(race_grp, Date, nat_race_agg, project, nat_pop_agg)]
-setnames(vax_stats_out_nat_all, c("nat_race_agg", "nat_pop_agg"), c("vaccinated_pct_12_out", "pop_12"))
-vax_stats_out_nat_all <- vax_stats_out_nat_all[, race_grp:="All"]
-vax_stats_out_nat_all <- unique(vax_stats_out_nat_all)
-vax_stats_out_nat <- rbind(vax_stats_out_nat_race, vax_stats_out_nat_all)
-vax_stats_out_nat <- vax_stats_out_nat[, state_name:="United States"]
-vax_stats_out_nat <- vax_stats_out_nat[, state:="US"]
-vax_stats_out_nat <- vax_stats_out_nat[, state_code:=0]
-vax_stats_out_nat <- vax_stats_out_nat[, vaccinated_pct_12_out:=as.character(round(vaccinated_pct_12_out, digits = 2))]
-
-vax_stats_out <- fread("~/Downloads/coverage_time_series.csv")
-vax_stats_out <- vax_stats_out[, Date:=ymd(Date)]
-vax_stats_out <- rbind(vax_stats_out, vax_stats_out_nat[race_grp%in%c("All", "Black", "White", "Hispanic", "Asian")])
-vax_stats_out <- vax_stats_out[, pop_12:=round(pop_12)]
-
-write.csv(vax_stats_out, "~/Downloads/coverage_time_series_7.8.21.csv", na = "", row.names = F)
-
-vax_stats_out <- vax_stats_out[as.numeric(vaccinated_pct_12_out)>=70 & vaccinated_pct_12_out!="NR" , min_date:=min(Date, na.rm=T), by = c("state_name", "race_grp")]
-vax_stats_out <- vax_stats_out[vaccinated_pct_12_out!="NR", min_date:=mean(min_date, na.rm = T), by = c("state_name", "race_grp")]
-vax_stats_out <- vax_stats_out[is.na(min_date) & vaccinated_pct_12_out!="NR", min_date:=ymd("2021-11-01")]
-vax_stats_out <- vax_stats_out[Date=="2021-11-01"]
-vax_stats_out <- unique(vax_stats_out[,.(state_name, race_grp, pop_12, state, state_code, min_date)])
-vax_stats_out <- vax_stats_out[!is.na(min_date), min_month:=month(min_date, label = T)]
-vax_stats_out <- vax_stats_out[!is.na(min_date) & min_date<="2021-07-08", date_70:="Reached 70%"]
-vax_stats_out <- vax_stats_out[!is.na(min_date) & is.na(date_70) & min_month%in%c("Jul"), date_70:="July"]
-vax_stats_out <- vax_stats_out[!is.na(min_date) & is.na(date_70) & min_month%in%c("Aug"), date_70:="August"]
-vax_stats_out <- vax_stats_out[!is.na(min_date) & is.na(date_70) & min_month%in%c("Sep", "Oct"), date_70:="September-October"]
-vax_stats_out <- vax_stats_out[!is.na(min_date) & is.na(date_70) & min_month%in%c("Nov"), date_70:="November or Later"]
-vax_stats_out <- vax_stats_out[is.na(min_date), date_70:="NR"]
-
-write.csv(vax_stats_out[,.(state_name, race_grp, pop_12, state, state_code, date_70)], "~/Downloads/map_date_70_7.8.21.csv", na = "", row.names = F)
-
-vax_stats_out <- copy(vax_stats_nat)
-vax_stats_out <- vax_stats_out[Date=="2021-07-04"]
-vax_stats_out <- vax_stats_out[,.(race_grp, nat_race, nat_race_agg)]
-vax_stats_out <- vax_stats_out[race_grp%in%c("Asian", "Black", "Hispanic", "White")]
-vax_stats_out <- dcast(vax_stats_out, nat_race_agg ~ race_grp, value.var = "nat_race")
-setnames(vax_stats_out, "nat_race_agg", "All")
-vax_stats_out <- vax_stats_out[, state_name:="United States"]
-
-write.csv(vax_stats_out, "./output/coverage_july_4_national.csv", na = "", row.names = F)
-
-vax_date_out <- copy(vax_stats_nat)
-vax_dates_square <- as.data.table(expand.grid(Date = seq(ymd("2021-03-15"), ymd("2021-09-01"), by = "day"), race_grp = c("Asian", "Black", "Hispanic", "White")))
-vax_date_out <- merge(vax_date_out, vax_dates_square, by = c("Date", "race_grp"), all = T)
-vax_date_out <- vax_date_out[order(race_grp, Date)]
-vax_date_out <- vax_date_out[, nat_race_approx:=na.approx(nat_race), by = c("race_grp")]
-vax_date_out <- vax_date_out[, nat_agg_approx:=na.approx(nat_race_agg), by = c("race_grp")]
-
-
-vax_date_out <- vax_date_out[nat_race_approx>=70, date_:=min(Date, na.rm=T), by = c( "race_grp")]
-vax_date_out <- vax_date_out[, date_:=mean(date_, na.rm=T), by = c("race_grp")]
-vax_date_out <- vax_date_out[, date_:=as.character(date_)]
-vax_date_out <- vax_date_out[is.na(date_), date_:="After September 1"]
-vax_date_out <- vax_date_out[nat_agg_approx>=70, date_agg:=min(Date, na.rm=T), by = c("race_grp")]
-vax_date_out <- vax_date_out[, date_agg:=mean(date_agg, na.rm=T), by = c("race_grp")]
-vax_date_out <- vax_date_out[, date_agg:=as.character(date_agg)]
-vax_date_out <- vax_date_out[is.na(date_agg), date_agg:="After September 1"]
-
-vax_date_out <- vax_date_out[, state_name:="United States"]
-vax_date_out <- unique(vax_date_out[,.(state_name, race_grp, date_, date_agg)])
-vax_date_out <- vax_date_out[race_grp%in%c("Asian", "Black", "Hispanic", "White")]
-vax_date_out <- dcast(vax_date_out, state_name + date_agg ~ race_grp, value.var = "date_")
-setnames(vax_date_out, "date_agg", "All")
-
-write.csv(vax_date_out, "./output/date_70_national.csv", na = "", row.names = F)
-
-
-
-pdf("./figures/national_scale_up_share_6.7.21.pdf", width =8, height = 6)
-plot <- ggplot(data = vax_stats_nat[race_grp%in%c("Hispanic", "White", "Black", "Asian") & is.na(project)],
-               aes(x = Date, y = nat_race, color = race_grp)) + 
-  geom_line(data = vax_stats_nat[race_grp=="White" & is.na(project)], aes(y = nat_race_agg), size = 1, color = "dark gray") +
-  geom_point(size = 2) + geom_line( size = 1.1) +
-  geom_line(data = vax_stats_nat[race_grp=="White" & (project == 1 | Date == "2021-06-07") & Date>="2021-06-07" & Date <="2021-07-04"], aes(y = nat_race_agg), size = 1.2, color = "dark gray",
-            linetype = "dashed", alpha = 0.9) +
-  geom_line(data = vax_stats_nat[race_grp%in%c("Hispanic", "White", "Black", "Asian") & 
-                                   (project == 1 | Date == "2021-06-07") & Date>="2021-06-07" & Date <="2021-07-04"], size = 1.3,
-            linetype = "dashed", alpha = 0.9) +
-  theme_bw() +
-  scale_color_manual(breaks= c("Hispanic", "White", "Black", "Asian"), values = c("All" = "#767676", "Hispanic" = "#c42e31", "White" = "#832543", "Asian" = "#6399AC", "Black" = "#e5a825")) +
-  labs(x = "", y = "Coverage Among Eligible (12+)", color = "Race/Ethnicity", title = "United States",
-       caption = "Gray line shows coverage among whole eligible (12+) population.\nSolid lines show historical (observed) data, dashed lines show projections.") +
-  theme(legend.position = "bottom") +
-  geom_hline(yintercept = 70, linetype = "dashed") +
-  scale_y_continuous(limits = c(0, 90)) +
-  scale_shape_manual(values = c(19, 1))
-print(plot)
-
-plot <- ggplot(data = vax_stats_nat[race_grp%in%c("Hispanic", "White", "Black", "Asian") & is.na(project)],
-               aes(x = Date, y = nat_race, color = race_grp)) + 
-  geom_line(data = vax_stats_nat[race_grp=="White" & is.na(project)], aes(y = nat_race_agg), size = 1, color = "dark gray") +
-  geom_point(size = 2) + geom_line( size = 1.1) +
-  geom_line(data = vax_stats_nat[race_grp=="White" & (project == 1 | Date == "2021-06-07") & Date>="2021-06-07" & Date <="2021-08-31"], aes(y = nat_race_agg), size = 1.2, color = "dark gray",
-            linetype = "dashed", alpha = 0.9) +
-  geom_line(data = vax_stats_nat[race_grp%in%c("Hispanic", "White", "Black", "Asian") & 
-                                   (project == 1 | Date == "2021-06-07") & Date>="2021-06-07" & Date <="2021-08-31"], size = 1.3,
-            linetype = "dashed", alpha = 0.9) +
-  theme_bw() +
-  scale_color_manual(breaks= c("Hispanic", "White", "Black", "Asian"), values = c("All" = "#767676", "Hispanic" = "#c42e31", "White" = "#832543", "Asian" = "#6399AC", "Black" = "#e5a825")) +
-  labs(x = "", y = "Coverage Among Eligible (12+)", color = "Race/Ethnicity", title = "United States",
-       caption = "Gray line shows coverage among whole eligible (12+) population.\nSolid lines show historical (observed) data, dashed lines show projections.") +
-  theme(legend.position = "bottom") +
-  geom_hline(yintercept = 70, linetype = "dashed") +
-  scale_y_continuous(limits = c(0, 90)) +
-  scale_shape_manual(values = c(19, 1))
-print(plot)
-dev.off()
-
-vax_stats <- vax_stats[, missing_data:=ifelse(is.na(value), 1, 0)]
-
-plot_data <- copy(vax_stats)
-plot_data <- merge(plot_data, suppress_table, by = c("state_name", "race_grp"))
-
-plot_data <- plot_data[Date=="2021-07-04"]
-plot_data <- plot_data[, binary:=ifelse(vaccinated_pct_12>=70, 1, 0)]
-all <- plot_data[race_grp=="White"]
-all <- all[, race_grp:="All"]
-plot_data <- rbind(plot_data, all)
-plot_data[race_grp=="All", binary:=ifelse(agg>=70, 1, 0)]
-plot_data[race_grp=="All", vaccinated_pct_12:=agg]
-
-plot_data <- plot_data[vaccinated_pct_12<50 , cov_cat:="30-49"]
-plot_data <- plot_data[vaccinated_pct_12<60 & vaccinated_pct_12>=50, cov_cat:="50-59"]
-plot_data <- plot_data[vaccinated_pct_12<70 & vaccinated_pct_12>=60, cov_cat:="60-69"]
-plot_data <- plot_data[vaccinated_pct_12>=70, cov_cat:="70+"]
-plot_data <- plot_data[(missing_data==1 & race_grp!="All") | nr ==1, cov_cat:="Data Not Reported"]
-
-plot_data <- plot_data[, cov_cat:=factor(cov_cat, levels = c("30-49", "50-59", "60-69", "70+", "Data Not Reported"))]
-
-pdf("./figures/tile_plot.pdf", width = 8, height = 12)
-ggplot(data = plot_data[race_grp%in%c("All", "Black", "White", "Asian", "Hispanic")],
-       aes(x = race_grp, y = state_name)) +
-  geom_tile(aes(fill = cov_cat)) +
-  scale_fill_manual(values = c('#ffa500', '#ffbf6b', '#ffd7ac', '#6d87ba', "#eeeeee")) +
-  theme_bw() +
-  labs(x = "", y = "", fill = "Coverage Among\nEligible (12+)",
-       title = "Projected Coverage Among Eligible (12+) on July 4, 2021",
-       caption = "Estimates not reported if margin of binomial error exceeded 0.5\npercentage points or a group received fewer than 1500 vaccinations") +
-  theme(legend.position = "bottom")+
-  theme(legend.key.width=unit(1.5,"cm")) +
-  guides(fill=guide_legend(nrow=4,byrow=TRUE)) +
-  scale_y_discrete(limits = rev(levels(as.factor(plot_data$state_name))), expand = c(0,0)) +
-  theme(text = element_text(size = 14)) +
-  scale_x_discrete(expand = c(0,0))
-dev.off()  
-
-plot_data <- plot_data[, state_name_ordered:=factor(state_name, levels = unique(plot_data$state_name[order(plot_data$agg)]))]
-plot_data <- plot_data[agg>80, agg:=80]
-plot_data <- plot_data[vaccinated_pct_12>80, vaccinated_pct_12:=80]
-
-pdf("./figures/dots_july4.pdf", width = 8, height = 10)
-
-plot_data <- plot_data[pop_12<500000, pop_cat:="0.0-0.4"]
-plot_data <- plot_data[pop_12<1000000 & pop_12>=500000, pop_cat:="0.5-0.9"]
-plot_data <- plot_data[pop_12>=1000000 & pop_12<2000000, pop_cat:="1.0-1.9"]
-plot_data <- plot_data[pop_12>=2000000, pop_cat:="2.0+"]
-plot_data <- plot_data[, pop_cat:=factor(pop_cat, levels = c("0.0-0.4", "0.5-0.9", "1.0-1.9", "2.0+"))]
-
-ggplot(data = plot_data[race_grp%in%c("Black", "White", "Asian", "Hispanic") & nr!=1],
-       aes(x = vaccinated_pct_12, y = state_name_ordered)) +
-  geom_point(data = plot_data[race_grp=="White"], aes(x = agg), color = "#222222", fill = "#555555", size = 3, shape = 23, alpha = 0) +
-  geom_point(data = plot_data[race_grp%in%c("Black", "White", "Asian", "Hispanic") & missing == 0 & nr!=1],
-             aes(color = race_grp, size = pop_cat), alpha = 0.9) +
-  geom_point(data = plot_data[race_grp=="White"], aes(x = agg), color = "#222222", fill = "#555555", size = 3, shape = 23, alpha = .8) +
-  scale_fill_manual(values = c('#ffa500', '#ffbf6b', '#ffd7ac', '#6d87ba', "#eeeeee")) +
-  theme_bw() +
-  labs(x = "Coverage Among Eligible (12+)", y = "", color = "Race/Ethnicity", size = "Population Size (Millions)",
-       title = "Projected Coverage Among Eligible (12+) on July 4, 2021") +
-  theme(legend.position = "bottom")+
-  # theme(legend.key.width=unit(1.5,"cm")) +
-  guides(color=guide_legend(nrow=4,byrow=TRUE, override.aes = list(size = 4))) +
-  guides(size=guide_legend(nrow=4,byrow=TRUE)) +
-  # scale_y_discrete(limits = rev(levels(as.factor(plot_data$state_name)))) +
-  theme(text = element_text(size = 14)) +
-  scale_size_manual(values = c(1, 2, 4, 6)) +
-  scale_color_manual(breaks= c("Hispanic", "White", "Black", "Asian"),
-                     values = c("All" = "#767676", "Hispanic" = "#c42e31", "White" = "#832543", "Asian" = "#6399AC", "Black" = "#e5a825")) +
-  geom_vline(xintercept = 70, linetype = "dashed")+
-  scale_x_continuous(labels = c("30%", "40%", "50%", "60%", "70%", "80%+"), breaks = c(30, 40, 50, 60, 70, 80), limits = c(30, 80))
-dev.off()
-
-## HEX MAP
-plot_data <- copy(vax_stats)
-
-plot_data <- plot_data[Date=="2021-07-04"]
-plot_data <- plot_data[, binary:=ifelse(vaccinated_pct_12>=70, 1, 0)]
-all <- plot_data[race_grp=="White"]
-all <- all[, race_grp:="All"]
-plot_data <- rbind(plot_data, all)
-plot_data[race_grp=="All", binary:=ifelse(agg>=70, 1, 0)]
-plot_data[race_grp=="All", vaccinated_pct_12:=agg]
-
-plot_data <- merge(plot_data, suppress_table, by = c("state_name", "race_grp"))
-
-plot_data <- plot_data[race_grp%in%c("Black", "White", "Hispanic", "Asian")]
-plot_data <- plot_data[binary==1, col_cat:="On Track to 70%"]
-plot_data <- plot_data[binary==0, col_cat:="Not on Track to 70%"]
-plot_data <- plot_data[nr == 1 | missing == 1, col_cat:="Data Not Reported"]
-plot_data <- plot_data[,.(race_grp, col_cat, state_name, binary)]
-
-
-library(tidyverse)
-library(geojsonio)
-library(RColorBrewer)
-library(rgdal)
-# Load this file. (Note: I stored in a folder called DATA)
-spdf <- geojson_read("~/Downloads/us_states_hexgrid.geojson",  what = "sp")
-
-# Bit of reformating
-spdf@data = spdf@data %>%
-  mutate(google_name = gsub(" \\(United States\\)", "", google_name))
-
-# Show it
-plot(spdf)
-
-library(broom)
-spdf@data = spdf@data %>% mutate(google_name = gsub(" \\(United States\\)", "", google_name))
-spdf_fortified <- tidy(spdf, region = "google_name")
-
-# Calculate the centroid of each hexagon to add the label:
-library(rgeos)
-centers <- as.data.table(cbind.data.frame(data.frame(gCentroid(spdf, byid=TRUE), id=spdf@data$iso3166_2)))
-
-spdf_fortified <- merge(spdf_fortified, plot_data, by.x = "id", by.y="state_name")
-spdf_fortified <- as.data.table(spdf_fortified)
-
-# Now I can plot this shape easily as described before:
-pdf("./figures/hex_maps_binary.pdf", width = 14, height = 10)
-plot <- ggplot() +
-  geom_polygon(data = spdf_fortified, aes( x = long, y = lat, group = group, fill=col_cat), color="white") +
-  # geom_text(data=centers, aes(x=x, y=y, label=id), color = "white") +
-  geom_text(data=centers, aes(x=x, y=y, label=id), color = "white") +
-  theme_void() +
-  coord_map() +
-  scale_fill_manual(values = c('#C1C1C1', '#ffa500', '#00579f')) +
-  # scale_fill_viridis_c(option = "A", na.value = "gray") +
-  # scale_fill_viridis_c(option = "A", breaks = c(-17, -15, -10, -5, 0, 5, 10, 12), na.value = "gray") +
-  theme(legend.position = "bottom", legend.key.width=unit(1.8,"cm")) +
-  guides(fill=guide_legend(nrow=1)) +
-  labs(fill = "", title = "States on Track to Reach 70% Coverage Among Eligible (12+) by July 4, by Race/Ethnicity\n") +
-  #caption = "*Gray colors do not have sufficient non-white population size") + 
-  theme(plot.margin = unit(c(1,1,1,1), "cm")) +
-  theme(strip.text = element_text(size = 12), text = element_text(size = 14)) +
-  facet_wrap(~race_grp)
-print(plot)
-dev.off()
-
-#### Acceleration to 70%
-plot_data <- copy(vax_stats)
-plot_data <- plot_data[Date=="2021-06-07"]
-plot_data <- plot_data[, accel:=((70-vaccinated_pct_12)/as.numeric((ymd("2021-07-04")-ymd("2021-06-07"))))/100]
-accel_df <- unique(plot_data[,.(accel, race_grp, state_name)])
-
-vax_stats <- vax_stats[Date<="2021-06-07"]
-vax_stats <- merge(vax_stats, accel_df, by = c("race_grp", "state_name"))
-
-plot_data <- copy(vax_stats)
-plot_data <- plot_data[Date=="2021-06-07"]
-plot_data <- plot_data[, speed_factor:=accel/diff_rate]
-plot_data <- plot_data[, speed_factor_pct:=(accel-diff_rate)/diff_rate]
-
-plot_data <- unique(plot_data[,.(state_name, speed_factor, race_grp, pop_12, missing)])
-plot_data <- plot_data[race_grp%in%c("White", "Asian", "Black", "Hispanic")]
-plot_data <- plot_data[speed_factor<=1, col_cat:="On track to 70%"]
-plot_data <- plot_data[speed_factor>1 & speed_factor<1.5, col_cat:="1-49% faster"]
-plot_data <- plot_data[speed_factor>=1.5 & speed_factor<2, col_cat:="50-99% faster"]
-plot_data <- plot_data[speed_factor>=2 & speed_factor<2.5, col_cat:="100-149% faster"]
-plot_data <- plot_data[speed_factor>=2.5 & speed_factor<3, col_cat:="150-199% faster"]
-plot_data <- plot_data[speed_factor>=3, col_cat:="200%+ faster"]
-plot_data <- merge(plot_data, suppress_table, by = c("race_grp", "state_name"))
-plot_data <- plot_data[nr==1 | missing == 1, col_cat:="Data Not Reported"]
-
-plot_data <- plot_data[, col_cat:=factor(col_cat, levels = c("On track to 70%", "1-49% faster", 
-                                                             "50-99% faster", "100-149% faster", "150-199% faster", "200%+ faster",
-                                                             "Data Not Reported"))]
-
-# Load this file. (Note: I stored in a folder called DATA)
-spdf <- geojson_read("~/Downloads/us_states_hexgrid.geojson",  what = "sp")
-
-# Bit of reformating
-spdf@data = spdf@data %>%
-  mutate(google_name = gsub(" \\(United States\\)", "", google_name))
-
-spdf@data = spdf@data %>% mutate(google_name = gsub(" \\(United States\\)", "", google_name))
-spdf_fortified <- tidy(spdf, region = "google_name")
-
-# Calculate the centroid of each hexagon to add the label:
-centers <- as.data.table(cbind.data.frame(data.frame(gCentroid(spdf, byid=TRUE), id=spdf@data$iso3166_2)))
-
-spdf_fortified <- merge(spdf_fortified, plot_data, by.x = "id", by.y="state_name")
-spdf_fortified <- as.data.table(spdf_fortified)
-
-# Now I can plot this shape easily as described before:
-pdf("./figures/hex_maps_speedfactor.pdf", width = 12, height = 10)
-plot <- ggplot() +
-  geom_polygon(data = spdf_fortified, aes( x = long, y = lat, group = group, fill=col_cat), color="white") +
-  # geom_text(data=centers, aes(x=x, y=y, label=id), color = "white") +
-  geom_text(data=centers, aes(x=x, y=y, label=id), color = "white") +
-  theme_void() +
-  coord_map() +
-  # scale_fill_manual(values = c('#00579f', '#fbe1c8', '#ffd2a0', '#ffc479', '#ffb54e', '#ffa500', '#C1C1C1')) +
-  scale_fill_manual(values = c('#8fa0c8', '#f0b4a0', '#e99579', '#e07754', '#d4562f', '#c63003', '#C1C1C1')) +
-  # , '#f2d2c8', '#f0b4a0', '#e99579', '#e07754', '#d4562f', '#c63003' ## '#8fa0c8'
-  # '#8fa0c8', '#f2d2c8', '#f0b4a0', '#e99579', '#e07754', '#d4562f', '#c63003'
-  # scale_fill_viridis_c(option = "A", na.value = "gray") +
-  # scale_fill_viridis_c(option = "A", breaks = c(-17, -15, -10, -5, 0, 5, 10, 12), na.value = "gray") +
-  theme(legend.position = "bottom", legend.key.width=unit(1.8,"cm")) +
-  guides(fill=guide_legend(nrow=4, byrow = T)) +
-  labs(fill = "", title = "Pace Required to Reach 70% Coverage Among Eligible (12+) by July 4, by Race/Ethnicity\n") +
-  #caption = "*Gray colors do not have sufficient non-white population size") + 
-  theme(plot.margin = unit(c(1,1,1,1), "cm")) +
-  theme(strip.text = element_text(size = 12), text = element_text(size = 14)) +
-  facet_wrap(~race_grp)
-print(plot)
-dev.off()
-
-## Fill out table
-plot_data <- copy(vax_stats)
-plot_data <- plot_data[Date=="2021-06-07"]
-plot_data <- plot_data[, accel:=((70-vaccinated_pct_12)/as.numeric((ymd("2021-07-04")-ymd("2021-06-07"))))/100]
-plot_data <- plot_data[, accel_agg:=((70-agg)/as.numeric((ymd("2021-07-04")-ymd("2021-06-07"))))/100]
-
-accel_df <- unique(plot_data[,.(accel, accel_agg, race_grp, diff_rate, diff_all_rate, state_name)])
-
-accel_df <- accel_df[, speed_factor_race:=round(((accel-diff_rate)/diff_rate)*100, digits = 0)]
-accel_df <- accel_df[, speed_factor_:=as.character(round(((accel-diff_rate)/diff_rate)*100, digits = 0))]
-
-accel_df <- accel_df[race_grp%in%c("White", "Black", "Hispanic", "Asian")]
-accel_df <- accel_df[speed_factor_race<=0, speed_factor_:="On Track"]
-accel_df <- accel_df[speed_factor_race>500, speed_factor_:="500+"]
-accel_df <- merge(accel_df, suppress_table, by = c("state_name", "race_grp"))
-accel_df <- accel_df[nr==1, speed_factor_:="NR"]
-accel_df <- accel_df[, c("accel", "diff_rate", "speed_factor_race", "nr"):=NULL]
-
-accel_df <- dcast(accel_df, state_name +  diff_all_rate + accel_agg ~ race_grp, value.var = c("speed_factor_"))
-
-accel_df <- accel_df[, temp:=round(((accel_agg-diff_all_rate)/diff_all_rate)*100, digits = 0)]
-accel_df <- accel_df[, All:=as.character(round(((accel_agg-diff_all_rate)/diff_all_rate)*100, digits = 0))]
-accel_df <- accel_df[temp<=0, All:="On Track"]
-accel_df <- accel_df[temp>500, All:="500+"]
-accel_df <- accel_df[,.(state_name, All, Asian, Black, Hispanic, White)]
-
-## National acceleration
-plot_data <- copy(vax_stats_nat)
-plot_data <- plot_data[is.na(project)]
-plot_data <- plot_data[order(race_grp, Date)]
-plot_data <- plot_data[, l2:=shift(nat_race, n = 2, type = "lag"), by = c("race_grp")]
-plot_data <- plot_data[, diff:=nat_race-l2]
-
-plot_data <- plot_data[, l2_all:=shift(nat_race_agg, n = 2, type = "lag"), by = c("race_grp")]
-plot_data <- plot_data[, diff_all:=nat_race_agg-l2_all]
-
-# Per population
-plot_data <- plot_data[, diff_rate:=(diff/(14))]
-plot_data <- plot_data[, diff_all_rate:=(diff_all/(14))]
-
-plot_data <- plot_data[Date=="2021-06-07"]
-plot_data <- plot_data[, accel:=((70-nat_race)/as.numeric((ymd("2021-07-04")-ymd("2021-06-07"))))]
-plot_data <- plot_data[, accel_agg:=((70-nat_race_agg)/as.numeric((ymd("2021-07-04")-ymd("2021-06-07"))))]
-
-accel_df_nat <- unique(plot_data[,.(accel, accel_agg, race_grp, diff_rate, diff_all_rate)])
-
-accel_df_nat <- accel_df_nat[, speed_factor_race:=round(((accel-diff_rate)/diff_rate)*100, digits = 0)]
-accel_df_nat <- accel_df_nat[, speed_factor_:=as.character(round(((accel-diff_rate)/diff_rate)*100, digits = 0))]
-
-accel_df_nat <- accel_df_nat[race_grp%in%c("White", "Black", "Hispanic", "Asian")]
-accel_df_nat <- accel_df_nat[speed_factor_race<=0, speed_factor_:="On Track"]
-accel_df_nat <- accel_df_nat[, c("accel", "diff_rate", "speed_factor_race"):=NULL]
-
-accel_df_nat <- dcast(accel_df_nat, diff_all_rate + accel_agg ~ race_grp, value.var = c("speed_factor_"))
-
-accel_df_nat <- accel_df_nat[, temp:=round(((accel_agg-diff_all_rate)/diff_all_rate)*100, digits = 0)]
-accel_df_nat <- accel_df_nat[, All:=as.character(round(((accel_agg-diff_all_rate)/diff_all_rate)*100, digits = 0))]
-accel_df_nat <- accel_df_nat[temp<=1, All:="On Track"]
-accel_df_nat <- accel_df_nat[,.(All, Asian, Black, Hispanic, White)]
-accel_df_nat <- accel_df_nat[, state_name:="United States"]
-
-accel_df <- rbind(accel_df_nat, accel_df)
-accel_df <- accel_df[,.(state_name, All, Asian, Black, Hispanic, White)]
-
-write.csv(accel_df, "./output/acceleration_df.csv", na = "", row.names = F)
-
-
-vax_stats <- copy(backup)
-
-for (i in ymd("2021-06-07"):ymd("2021-08-31")) {
-  projection <- vax_stats[Date==i & !(state_name%in%c("Nebraska"))]
-  # Per population
-  projection <- projection[, race_doses:=race_doses+(diff_rate*0.75*(pop_12))]
-  projection <- projection[, doses_adj:=doses_adj+(diff_all_rate*0.75*(pop_12_allrace))]
-  
-  projection <- projection[, Date:=Date+1]
-  projection <- projection[, project:=1]
-  vax_stats <- rbind(vax_stats, projection, fill = T)
-}
-
-for (i in ymd("2021-05-24"):ymd("2021-08-31")) {
-  projection <- vax_stats[Date==i & (state_name%in%c("Nebraska"))]
-  # Per population
-  projection <- projection[, race_doses:=race_doses+(diff_rate*0.75*(pop_12))]
-  projection <- projection[, doses_adj:=doses_adj+(diff_all_rate*0.75*(pop_12_allrace))]
-  
-  projection <- projection[, Date:=Date+1]
-  projection <- projection[, project:=1]
-  vax_stats <- rbind(vax_stats, projection, fill = T)
-}
-
-vax_stats <- vax_stats[, vaccinated_pct_12:=(race_doses/pop_12)*100]
-vax_stats <- vax_stats[vaccinated_pct_12>100 | is.na(vaccinated_pct_12), race_doses:=pop_12]
-vax_stats <- vax_stats[vaccinated_pct_12>100 | is.na(vaccinated_pct_12), vaccinated_pct_12:=100]
-
-vax_stats <- vax_stats[, tot_doses:=sum(race_doses, na.rm=T), by = c("state_name", "Date")]
-vax_stats <- vax_stats[, agg:=(tot_doses/pop_12_allrace)*100]
-
-
-pdf("./figures/projections_state_declining_pace.pdf", width = 8, height = 6)
-for (i in unique(kff_full$state_name)) {
-  plot <- ggplot(data = vax_stats[state_name==i & race_grp%in%c("Hispanic", "White", "Black", "Asian") & is.na(project) & pop_12>=50000],
-                 aes(x = Date, y = vaccinated_pct_12, color = race_grp)) + 
-    geom_line(data = vax_stats[state_name==i & race_grp=="White" & is.na(project)], aes(y = agg), size = 1, color = "dark gray") +
-    geom_point(size = 2) + geom_line( size = 1.1) +
-    geom_line(data = vax_stats[state_name==i & race_grp=="White" & (project == 1 | Date == "2021-06-07") & Date <="2021-07-04"], aes(y = agg), size = 1.2, color = "dark gray",
-              linetype = "dashed", alpha = 0.9) +
-    geom_line(data = vax_stats[state_name==i & race_grp%in%c("Hispanic", "White", "Black", "Asian") & (project == 1 | Date == "2021-06-07") & pop_12>=50000 & Date <="2021-07-04"],
-              size = 1.3,
-              linetype = "dashed", alpha = 0.9) +
-    theme_bw() +
-    scale_color_manual(breaks= c("Hispanic", "White", "Black", "Asian"),
-                       values = c("All" = "#767676", "Hispanic" = "#c42e31", "White" = "#832543", "Asian" = "#6399AC", "Black" = "#e5a825")) +
-    labs(x = "", y = "Coverage Among Eligible (12+)", color = "Race/Ethnicity", title = paste0(i),
-         caption = "Gray line shows coverage among whole eligible (12+) population.\nSolid lines show historical (observed) data, dashed lines show projections.") +
-    theme(legend.position = "bottom") +
-    geom_hline(yintercept = 70, linetype = "dashed") +
-    scale_y_continuous(limits = c(0, 80)) +
-    scale_shape_manual(values = c(19, 1))
-  print(plot)
-}
-dev.off()
-
-vax_stats_nat <- copy(vax_stats)
-vax_stats_nat <- vax_stats_nat[, nat_doses_race:=sum(race_doses, na.rm=T), by = c("race_grp", "Date")]
-vax_stats_nat <- vax_stats_nat[, nat_pop_race:=sum(pop_12, na.rm=T), by = c("race_grp", "Date")]
-vax_stats_nat <- vax_stats_nat[, nat_doses_agg:=sum(race_doses, na.rm=T), by = c("Date")]
-vax_stats_nat <- vax_stats_nat[, nat_pop_agg:=sum(pop_12, na.rm=T), by = c("Date")]
-
-vax_stats_nat <- vax_stats_nat[, nat_race:=(nat_doses_race/nat_pop_race)*100]
-vax_stats_nat <- vax_stats_nat[, nat_race_agg:=(nat_doses_agg/nat_pop_agg)*100]
-
-vax_stats_nat <- unique(vax_stats_nat[,.(race_grp, Date, nat_race, nat_race_agg, project)])
-
-write.csv(vax_stats_nat[Date=="2021-07-04"], "./output/national_declining.csv", na = "", row.names = F)
-
-
