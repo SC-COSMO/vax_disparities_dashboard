@@ -2,7 +2,7 @@
 Maps,Title,Title,Tracking Racial/Ethnic Disparities in COVID-19 Vaccination
 Time series,Title,Title,Tracking Racial/Ethnic Disparities in COVID-19 Vaccination
 About,Title,Title,Tracking Racial/Ethnic Disparities in COVID-19 Vaccination
-Maps,Above tabs,Text,"Monitoring racial/ethnic disparities in COVID-19 vaccination coverage across US states has been hindered by heterogenous and incomplete data. We applied consistent rules to reconcile data, estimate historical coverage, and project future coverage in an effort to promote vaccine equity."
+Maps,Above tabs,Text,"Tracking racial/ethnic disparities in COVID-19 vaccination coverage across US states is essential to advancing vaccine equity. State-level data needed to monitor levels and trends in vaccination disparities are incomplete and diverse. We applied consistent rules to reconcile data, estimate historical coverage, and project future coverage of COVID-19 vaccinations."
 Maps,Below tabs,Text,"Maps show variation in coverage of at least one dose ages 12 years and older across states and by race/ethnicity.
 
 Explore the map by selecting a metric. Hover over a state for more information."
@@ -10,13 +10,13 @@ Maps,Metric 1,Text,Projected date to reach 80% coverage
 Maps,Metric 2,Text,Current coverage
 Maps,Legend 1,Legend text,Time to reach 80% coverage of 1+ doses among ages 12+
 Maps,Legend 2,Legend text,Current coverage of 1+ doses among ages 12+
-Time series,Above tabs,Text,"Monitoring racial/ethnic disparities in COVID-19 vaccination coverage across US states has been hindered by heterogenous and incomplete data. We applied consistent rules to reconcile data, estimate historical coverage, and project future coverage in an effort to promote vaccine equity."
+Time series,Above tabs,Text,"Tracking racial/ethnic disparities in COVID-19 vaccination coverage across US states is essential to advancing vaccine equity. State-level data needed to monitor levels and trends in vaccination disparities are incomplete and diverse. We applied consistent rules to reconcile data, estimate historical coverage, and project future coverage of COVID-19 vaccinations."
 Time series,Below tabs,Text,"Coverage trends for at least one dose among ages 12 years and older.
 
 Choose a view to compare racial/ethnic groups within a state or to compare states for a particular racial/ethnic group."
 Time series,View 1,Text,All states by race/ethnicity
 Time series,View 2,Text,All racial/ethnic groups by state
-About,Above tabs,Text,"Monitoring racial/ethnic disparities in COVID-19 vaccination coverage across US states has been hindered by heterogenous and incomplete data. We applied consistent rules to reconcile data, estimate historical coverage, and project future coverage in an effort to promote vaccine equity."
+About,Above tabs,Text,"Tracking racial/ethnic disparities in COVID-19 vaccination coverage across US states is essential to advancing vaccine equity. State-level data needed to monitor levels and trends in vaccination disparities are incomplete and diverse. We applied consistent rules to reconcile data, estimate historical coverage, and project future coverage of COVID-19 vaccinations."
 About,Below tabs 1,Text,The research team are members of [Stanford University’s Department of Health Policy](https://healthpolicy.fsi.stanford.edu/). We are part of the [Prevention Policy Modeling Lab (PPML)](https://ppml.stanford.edu/) and the [Stanford-CIDE Coronavirus Simulation Modeling (SC-COSMO) Consortium](https://www.sc-cosmo.org/). You can get in touch with us at <vax.equity.tracker@gmail.com>.
 About,Below tabs 2,Text,"Our work is supported in part by funding from the Centers for Disease Control and Prevention and the Council of State and Territorial Epidemiologists, the National Institute on Drug Abuse, the State of California, Stanford's Clinical and Translational Science Award (CTSA) to Spectrum, and the Stanford School of Medicine's COVID-19 Research Fund. The content is solely the responsibility of the authors and does not necessarily represent the official views of funders."
 About,Below tabs 3,Text,"We are grateful for the tireless work of analysts at the Kaiser Family Foundation, who routinely extract and compile data from state dashboards to provide breakdowns of vaccinations by race/ethnicity."
